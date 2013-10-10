@@ -6,15 +6,12 @@ import java.awt.Color;
 
 import robocode.*;
 
-public class Exec extends AdvancedRobot
+public class Exec extends AdvancedRobot implements Consts
 {
-	static final int quaterturn=90;
-	static final int halfturn=180;
-	static final int fullturn=360;
 	
 	int count=0;			//出力確認用
 	boolean flag=true;	
-	double dist=10000;
+	double dist=60;
 	TurnCompleteCondition tcc =new TurnCompleteCondition(this);				//本体が回転完了したかどうかを調べるクラス
 	RadarTurnCompleteCondition rtcc =new RadarTurnCompleteCondition(this);	//レーダーが回転完了したかどうかを調べるクラス
 	Coordinates p1,p2;		//座標クラス
@@ -38,7 +35,7 @@ public class Exec extends AdvancedRobot
 		setColors(Color.black, Color.black, Color.black);
 		setScanColor(Color.black);
 		
-		int turntemp=fullturn;
+		int turntemp=FULL_TURN;
 		
 		//初期位置に移動
 		setPosition();
@@ -46,11 +43,18 @@ public class Exec extends AdvancedRobot
 		while(true)
 		{
 			if(flag) initialscan();
-			if(shotDetected) out.println("avoid!!" + count++);//ここに回避アルゴリズムを明記
-			setAhead(dist);
+			if(shotDetected)
+			{
+				out.println("ban");
+				setAhead(dist);//ここに回避アルゴリズムを明記
+				dist=-dist;
+			}
+			
+			execute();
+			/*setAhead(dist);
 			setTurnRight(turntemp);
 			waitFor(tcc);
-			turntemp = -turntemp;
+			turntemp = -turntemp;*/
 		}
 	}
 		
@@ -71,6 +75,7 @@ public class Exec extends AdvancedRobot
 	
 	double radarturn;
 	double gunturn;
+	double bodyturn;
 	static final double past=10;
 	double lastEnergy=0.0;
 	double nowEnergy;
@@ -79,16 +84,17 @@ public class Exec extends AdvancedRobot
 	public void onScannedRobot(ScannedRobotEvent e)
 	{
 		flag=false;
-		radarturn=c.nomalizeDegree(e.getBearing()+getHeading()-getRadarHeading());
+		bodyturn=c.nomalizeDegree(e.getBearing()+90);			//相手に対して垂直に本体を向ける
 		gunturn=c.nomalizeDegree(e.getBearing()+getHeading()-getGunHeading());
+		radarturn=c.nomalizeDegree(e.getBearing()+getHeading()-getRadarHeading());
 		radarturn+=(radarturn>0)?past:-past;
 		setTurnRadarRight(radarturn);
 		setTurnGunRight(gunturn);
+		setTurnRight(bodyturn);
 		setFire(attack.bulletPower());
 		//setTurnGunRight(0);
-		//setTurnRight(0);
 		
-		/*nowEnergy=e.getEnergy();
+		nowEnergy=e.getEnergy();
 		if(enemy.getEnergy()==0) enemy.setEnergy(nowEnergy);
 		energyLoss=enemy.getEnergy()-nowEnergy;
 		enemy.setEnergy(nowEnergy);
@@ -96,7 +102,7 @@ public class Exec extends AdvancedRobot
 		if(0.1<=energyLoss && energyLoss<=3.0)
 			shotDetected=true;
 		else
-			shotDetected=false;*/
+			shotDetected=false;
 	}
 	
 	public void onHitByBullet(HitByBulletEvent e)
